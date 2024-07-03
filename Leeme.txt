@@ -1,0 +1,12 @@
+Renato Pomeri Programación Web 005 Evaluación 3
+
+El proyecto cuenta con una página principal de "login" donde se puede entrar 
+como admin o como invitado. El usuario para admin es "admin" con clave "123". 
+La vista del admin tiene un CRUD en su página principal para añadir, editar o eliminar productos.
+También tiene la página de registro, donde puede añadir nuevos usuarios, ya sean admins o clientes. 
+También cuenta con la página de historial, donde puede ver todas las compras realizadas por los clientes.
+
+Al ingresar como invitado o como usuario normal, nos llevará a la página de compra, 
+donde hay un carrito de compras que se actualizará dependiendo de lo que suban los administradores.
+Al confirmar la compra, esta se registrará en la base de datos y se podrá ver en la página de historial del admin.
+

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compra Documentos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        nav {
+            background-color: #333;
+            width: 100%;
+            padding: 10px 20px;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        nav ul li {
+            display: flex;
+        }
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 14px 16px;
+            transition: background-color 0.3s;
+        }
+        nav ul li a:hover {
+            background-color: #575757;
+        }
+        nav .btn svg {
+            vertical-align: middle;
+            margin-right: 5px;
+            fill: white;
+        }
+        h2 {
+            color: #444;
+        }
+        form, table, #cart {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        form button, table a, .add-to-cart, .remove-from-cart, #confirm-purchase {
+            background: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        form button[type="button"] {
+            background: #6c757d;
+        }
+        form button:hover, table a:hover, .add-to-cart:hover, .remove-from-cart:hover, #confirm-purchase:hover {
+            background: #0056b3;
+        }
+        form button[type="button"]:hover {
+            background: #5a6268;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f8f9fa;
+        }
+        table td {
+            vertical-align: middle;
+        }
+        table img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        table a {
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
+        table a.delete {
+            background: #dc3545;
+        }
+        table a.delete:hover {
+            background: #c82333;
+        }
+        #cart {
+            display: none;
+        }
+        #cart.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="{% url 'login' %}" class="btn me-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="30" class="bi bi-person-circle" viewBox="0 0 16 16">
+                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                    <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                </svg>
+            </a></li>
+        </ul>
+    </nav>
+
+    <h2>Carrito de compra</h2>
+    {% if documents %}
+    <table>
+        <thead>
+            <tr>
+                <th>Descripción</th>
+                <th>Foto</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for document in documents %}
+            <tr>
+                <td>{{ document.descripcion }}</td>
+                <td>
+                    <img src="{{ document.document.url }}" alt="" class="document-image">
+                </td>
+                <td>{{ document.precio }} $</td>
+                <td><button class="add-to-cart" data-id="{{ document.id }}" data-description="{{ document.descripcion }}" data-price="{{ document.precio }}">Agregar al Carrito</button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay documentos subidos.</p>
+    {% endif %}
+
+    <div id="cart">
+        <h2>Carrito de Compras</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Precio Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cart-items">
+             
+            </tbody>
+        </table>
+        <h3>Total: <span id="cart-total">0.00</span></h3>
+        <button id="confirm-purchase">Confirmar Compra</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartTotalElement = document.getElementById('cart-total');
+            const cartContainer = document.getElementById('cart');
+            const confirmPurchaseButton = document.getElementById('confirm-purchase');
+
+            function updateCart() {
+                cartItemsContainer.innerHTML = '';
+                let total = 0;
+                const itemMap = {};
+
+                cart.forEach(item => {
+                    if (!itemMap[item.id]) {
+                        itemMap[item.id] = {...item, quantity: 0, totalPrice: 0};
+                    }
+                    itemMap[item.id].quantity += 1;
+                    itemMap[item.id].totalPrice += parseFloat(item.price);
+                });
+
+                Object.values(itemMap).forEach(item => {
+                    const row = document.createElement('tr');
+                    const descriptionCell = document.createElement('td');
+                    const quantityCell = document.createElement('td');
+                    const priceCell = document.createElement('td');
+                    const actionsCell = document.createElement('td');
+
+                    descriptionCell.textContent = item.description;
+                    quantityCell.textContent = `x${item.quantity}`;
+                    priceCell.textContent = item.totalPrice.toFixed(2);
+                    actionsCell.innerHTML = `<button class="remove-from-cart" data-id="${item.id}">Eliminar</button>`;
+
+                    row.appendChild(descriptionCell);
+                    row.appendChild(quantityCell);
+                    row.appendChild(priceCell);
+                    row.appendChild(actionsCell);
+
+                    cartItemsContainer.appendChild(row);
+
+                    total += item.totalPrice;
+                });
+
+                cartTotalElement.textContent = total.toFixed(2);
+
+                if (cart.length > 0) {
+                    cartContainer.classList.add('visible');
+                } else {
+                    cartContainer.classList.remove('visible');
+                }
+
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const description = this.getAttribute('data-description');
+                    const price = this.getAttribute('data-price');
+
+                    const item = { id, description, price };
+                    cart.push(item);
+                    updateCart();
+                });
+            });
+
+            cartItemsContainer.addEventListener('click', function(event) {
+                if (event.target.classList.contains('remove-from-cart')) {
+                    const id = event.target.getAttribute('data-id');
+                    const index = cart.findIndex(item => item.id === id);
+                    if (index !== -1) {
+                        cart.splice(index, 1);
+                        updateCart();
+                    }
+                }
+            });
+
+            confirmPurchaseButton.addEventListener('click', function() {
+                const articulos = cart.map(item => ({
+                    id: item.id,
+                    description: item.description,
+                    price: item.price
+                }));
+                const precioTotal = parseFloat(cartTotalElement.textContent);
+
+                fetch('/confirmar_compra/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ articulos, precio_total: precioTotal })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Compra confirmada. Gracias por su compra!');
+                        cart = [];
+                        updateCart();
+                    } else {
+                        alert('Hubo un problema al confirmar la compra.');
+                    }
+                });
+            });
+
+            updateCart();
+        });
+    </script>
+</body>
+</html>
